@@ -23,15 +23,21 @@
                 (conj acc (new-layer last-width width perceptron-constructor)))
          acc)))))
 
+(defn activations-of-layer [layer]
+  (map :last-activation layer))
+
 (defn fire-layer [layer input]
   (map #(p/fire % input) layer))
 
 (defn fire-layers [layers input]
   (loop [[layer & rest-layers] layers
-         activations input]
+         activations input
+         acc-layers []]
     (println "Activations:" activations)
     (if layer
-      (recur rest-layers
-             (fire-layer layer activations))
+      (let [fired-layer (fire-layer layer activations)]
+        (recur rest-layers
+               (activations-of-layer fired-layer)
+               (conj acc-layers fired-layer)))
 
-      activations)))
+      acc-layers)))

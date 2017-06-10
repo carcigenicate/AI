@@ -3,7 +3,7 @@
 
 (def bias -1)
 
-(defrecord Perceptron [weights activation-pair biased?])
+(defrecord Perceptron [weights activation-pair biased? last-activation])
 
 (defn new-perceptron [n-weights weight-f activation-pair biased?]
   (let [n-weights' (+ n-weights (if biased? 1 0))
@@ -11,13 +11,13 @@
                   (for [_ (range n-weights')]
                     (weight-f)))]
 
-    (->Perceptron weights activation-pair biased?)))
+    (->Perceptron weights activation-pair biased? nil)))
 
 (defn- compatible-input? [perceptron input]
   (= (count input)
      (count (:weights perceptron))))
 
-(defn- check-input-compatbility [perceptron input]
+(defn check-input-compatbility [perceptron input]
   (when-not (compatible-input? perceptron input)
     (throw (RuntimeException.
              (str "Invalid input (" input ") for perceptron (" perceptron ")")))))
@@ -34,4 +34,5 @@
     (let [act-f (:activation (:activation-pair perceptron))
           weighted-sum (nh/sum processed-input)]
 
-       (act-f weighted-sum))))
+       (assoc perceptron :last-activation
+              (act-f weighted-sum)))))
