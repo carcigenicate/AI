@@ -3,7 +3,9 @@
 
 (def bias -1)
 
-(defrecord Perceptron [weights activation-pair biased? last-activation])
+(defrecord Perceptron [weights activation-pair biased? last-activation]
+  Object
+  (toString [self] (str (dissoc (into {} self) :activation-pair))))
 
 (defn new-perceptron [n-weights weight-f activation-pair biased?]
   (let [n-weights' (+ n-weights (if biased? 1 0))
@@ -24,8 +26,8 @@
 
 (defn biased-input
   "If the perceptron is biased, a bias is added to the other activations."
-  [perceptron input]
-  (if (:biased? perceptron)
+  [biased? input]
+  (if biased?
     (conj (vec input) bias)
     input))
 
