@@ -22,10 +22,17 @@
     (throw (RuntimeException.
              (str "Invalid input (" input ") for perceptron (" perceptron ")")))))
 
-(defn- weighted-biased-input [perceptron input]
-  (let [{ws :weights b? :biased?} perceptron
-        biased-input? (if b? (conj (vec input) bias) input)]
-    (mapv * ws biased-input?)))
+(defn biased-input
+  "If the perceptron is biased, a bias is added to the other activations."
+  [perceptron input]
+  (if (:biased? perceptron)
+    (conj (vec input) bias)
+    input))
+
+(defn weighted-biased-input [perceptron input]
+  (let [{ws :weights} perceptron
+        input' (biased-input perceptron input)]
+    (mapv * ws input')))
 
 (defn fire [perceptron input]
   (let [processed-input (weighted-biased-input perceptron input)]
