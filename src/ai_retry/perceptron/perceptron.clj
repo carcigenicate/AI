@@ -1,5 +1,6 @@
 (ns ai-retry.perceptron.perceptron
-  (:require [ai-retry.helpers.number-helpers :as nh]))
+  (:require [ai-retry.helpers.number-helpers :as nh]
+            [helpers.general-helpers :as g]))
 
 (def bias -1)
 
@@ -33,7 +34,7 @@
 
 (defn weighted-biased-input [perceptron input]
   (let [{ws :weights} perceptron
-        input' (biased-input perceptron input)]
+        input' (biased-input (:biased? perceptron) input)]
     (mapv * ws input')))
 
 (defn fire [perceptron input]
@@ -45,3 +46,9 @@
 
        (assoc perceptron :last-activation
               (act-f weighted-sum)))))
+
+(defn random-weight [min-weight max-weight default-weight rand-gen]
+  (let [rw (g/random-double min-weight max-weight rand-gen)]
+    (if (zero? rw)
+      default-weight
+      rw)))

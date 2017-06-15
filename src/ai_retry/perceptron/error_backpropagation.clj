@@ -18,12 +18,19 @@
 
 (defn hidden-node-error
   "Calculates the error for a hidden node.
-  next-layer-error-map should be a map of {error weight-to-current-node, ...}"
-  [activation derivative next-layer-error-map]
+  previous-layer-error-map should be a map of {error weight-to-current-node, ...}"
+  [activation derivative previous-layer-error-map]
   (* (derivative activation)
      (nh/sum
        (map (fn [[error weight]] (* error weight))
-            next-layer-error-map))))
+            previous-layer-error-map))))
+
+(defn hidden-layer-errors [layer previous-layer-errors]
+  (let [d #(-> % :activation-pair :derivative)
+        m #(into {} (map vector previous-layer-errors (:weights %)))]
+
+   (mapv #(hidden-node-error (:last-activation %) (d %) (m %))
+         layer)))
 
 (defn weight-adjustment [edge-source-activation edge-target-error]
   (* edge-source-activation edge-target-error))
@@ -38,46 +45,35 @@
   [old-weights source-activations target-error learning-rate]
   (mapv (fn [a w]
           (adjust-weight w a target-error learning-rate))
-        source-activations old-weights))
-
+        source-activations
+        old-weights))
+#_
 (defn backprop-layer [layer next-layer-activations previous-layer-errors learning-rate]
   (mapv (fn [p e]
           (update p :weights
                     #(adjust-weights % next-layer-activations e learning-rate)))
-        layer previous-layer-errors))
+        layer
+        previous-layer-errors))
+
+(defn backprop-layer [layer next-layer-activations layer-errors learning-rate]
+  (mapv (fn [p e]
+          (update p :weights
+                  #(adjust-weights % next-layer-activations e learning-rate)))
+        layer
+        layer-errors))
 
 
-#_
-(defn adjust-perceptron [perceptron previous-layer-activations error]
-  (p/check-input-compatbility perceptron previous-layer-activations)
+(defn backprop-layers [layers input-activations output-errors learning-rate]
+  (loop [[layer & [next-layer :as rest-layers]] (reverse layers)
+         errors output-errors
+         acc '()]
 
-  (let []
-    (update perceptron :weights
-            #(mapv (fn [w i]
-                     (+ w ()))
-                   % previous-layer-activations))))
+    (if layer
+        (let [next-acts (if next-layer (la/activations-of-layer next-layer) input-activations)
+              b-layer (backprop-layer layer next-acts errors learning-rate)
+              next-errors (hidden-layer-errors next-layer errors)]
 
-#_
-(defn adjust-perceptron [perceptron previous-layer-activations expected-activation]
-  (p/check-input-compatbility perceptron previous-layer-activations)
-  (let [{{ deriv-f :derivative} :activation-pair act :last-activation} perceptron
-        error (* (- expected-activation act) (deriv-f act))]
-    (update perceptron :weights
-            #(mapv (fn [w i]
-                     (+ w ()))
-                   % previous-layer-activations))))
+          (recur rest-layers next-errors
+                 (conj acc b-layer)))
 
-
-#_
-(defn raw-adjust-by [input expected-output actual-output deriv-f]
-  (let [error (- expected-output actual-output)]
-
-    (nh/sum
-      (fo))))
-#_
-(defn improve-weights [perceptron input-output-map learning-rate]
-  (let [deriv-f (:derivative (:activation-pair perceptron))]
-    (reduce
-      (fn [acc-perc [ins out]]
-        (let [])))))
-
+        (vec acc))))

@@ -3,7 +3,7 @@
             [ai-retry.perceptron.perceptron :as p]))
 
 (defn fire-layer [layer input]
-  (map #(p/fire % input) layer))
+  (mapv #(p/fire % input) layer))
 
 (defn fire-layers [layers input]
   (loop [[layer & rest-layers] layers
