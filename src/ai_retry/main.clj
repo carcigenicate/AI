@@ -8,18 +8,26 @@
             [ai-retry.perceptron.learning-sets :as ls]
             [ai-retry.perceptron.layer :as la]
             [ai-retry.perceptron.net :as n]
+            [ai-retry.perceptron.test-net :as tn]
 
             [helpers.general-helpers :as g])
   (:gen-class))
 
-(def error-learning-rate-multiple 0.01)
+(def error-learning-rate-multiple 5)
 
 (def learning-rate 0.005)
+
+(def error-epsilon 1e-10)
 
 (defn average-abs-error [errors]
   (nh/average
     (map #(Math/abs ^double %) errors)))
 
+(defn relative-error-symbol [old-error new-error]
+  (cond
+    (< old-error new-error) (char 8657) ; Up arrow
+    (> old-error new-error) (char 8659) ; Down arrow
+    :else \=))
 
 (defn adjustment-loop [layers learning-set iterations]
   (let [sample-perc (ffirst layers)
@@ -29,7 +37,8 @@
 
     (loop [i 0
            acc-layers layers
-           [[input output] & rest-sets] cycled-sets]
+           [[input output] & rest-sets] cycled-sets
+           last-errors {}]
 
       (let [biased-input (p/biased-input (:biased? sample-perc) input)
             fired-layers (ap/fire-layers acc-layers biased-input)
@@ -38,14 +47,23 @@
             errors (eb/output-layer-errors output fired-acts deriv)
             av-error (average-abs-error errors)
             l-rate (* av-error error-learning-rate-multiple)
-            layers' (eb/backprop-layers fired-layers biased-input errors l-rate)]
+            layers' (eb/backprop-layers fired-layers biased-input errors l-rate)
+            last-error (get last-errors input Double/MAX_VALUE)
+            error-sym (relative-error-symbol last-error av-error)
+            err-diff (Math/abs ^double (- last-error av-error))
+            last-errors' (assoc last-errors input av-error)]
 
         (when (zero? (rem i print-every))
-          (println i " E:" av-error " I:" input " O:" output " P:" fired-acts
-                   "\n\tL:" l-rate "\n"))
+          #_
+          (println i "E:" av-error "I/O:" input output "{" fired-acts
+                   "}\n\tL:" l-rate "-" error-sym " " err-diff "\n")
+
+          (println i error-sym)
+          (clojure.pprint/pprint last-errors)
+          (println))
 
         (if (< i iterations)
-          (recur (inc i) layers' rest-sets)
+          (recur (inc i) layers' rest-sets last-errors')
           layers')))))
 
 (defn pdf-test
@@ -74,10 +92,11 @@
 
         b-net (eb/backprop-layers fired-net input errors 1)]
 
-    (clojure.pprint/pprint fired-net)
-    (println "Out Acts:" acts)
-    (println "Errors:" errors)
-    (clojure.pprint/pprint b-net)))
+    (comment
+      (clojure.pprint/pprint fired-net)
+      (println "Out Acts:" acts)
+      (println "Errors:" errors)
+      (clojure.pprint/pprint b-net))))
 
 
 #_
