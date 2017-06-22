@@ -8,6 +8,6 @@
   ([fitness-f settings]
    (->Genetic-Algorithm p/new-population fitness-f settings))
   ([fitness-f]
-   (new-ga-obj fitness-f s/default-settings)))
+   (new-ga-obj fitness-f s/default-standard-settings)))
 
 (defn advance-generation [ga])
