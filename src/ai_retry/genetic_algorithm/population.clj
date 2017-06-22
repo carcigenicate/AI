@@ -5,7 +5,6 @@
 (def new-population
   [])
 
-
 (defn add-gene-sequence [pop genes]
   (conj pop genes))
 
@@ -38,35 +37,40 @@
           (recur r (conj picked p)))))))
 
 (defn seperate-elite-genes
-  "Sorts the population according to the com(parator), seperates the top elite-perc percentage, and returns a pair of [elite-genes other-genes]."
-  [pop elite-perc com]
-  (let [sorted (vec (sort com pop))
-        n-to-keep (int (* (count pop) elite-perc))]
-    [(subvec sorted 0 n-to-keep) (subvec sorted n-to-keep)]))
+  "Expects the population is sorted already. The fittest gene should be first.
+  Seperates the top elite-perc percentage, and returns a pair of [elite-genes other-genes]."
+  [sorted-pop elite-perc]
+  (let [n-to-keep (int (* (count sorted-pop) elite-perc))]
+    [(subvec sorted-pop 0 n-to-keep) (subvec sorted-pop n-to-keep)]))
 
 (defn get-potential-parents
   "Returns the elite parents along with some randomly chosen lesser genes."
-  [pop elite-perc lesser-perc]
-  (let [[elites rest-genes] (seperate-elite-genes pop elite-perc)]))
-
-
-
-#_
-(defn seperate-bottom-perc
-  "Returns a population where only the first perc-to-keep (decimal) percentage of the population is kept (rounded down). The sort order is defined by the comparator com."
-  [pop perc-to-keep com]
-  (let [sorted (vec (sort com pop))
-        n-to-keep (int (* (count pop) perc-to-keep))]
-    (subvec sorted 0 n-to-keep)))
+  [sorted-pop elite-perc lesser-perc rand-gen]
+  (let [[elites rest-genes] (seperate-elite-genes sorted-pop elite-perc)
+        rest-to-pick (* (count rest-genes) lesser-perc)]
+    (into elites
+          (random-genes rest-genes rest-to-pick rand-gen))))
 
 (defn mutate-population [pop mutate-chance possible-gene-types rand-gen]
-  (mapv #(-> %
-             (gs/swap-mutate rand-gen)
-             (gs/replacement-mutate possible-gene-types rand-gen))
-        pop))
+  (let [mut? #(g/random-perc mutate-chance rand-gen)]
+    (mapv #(let [swap-mut (if (mut?)
+                            (gs/swap-mutate % rand-gen)
+                            %)
+                 replace-mut (if (mut?)
+                               (gs/replacement-mutate swap-mut possible-gene-types rand-gen)
+                               swap-mut)]
+                replace-mut)
+          pop)))
 
+(defn repopulate-population [pop expected-size rand-gen]
+  (let [n-needed (- expected-size (count pop))]
+    (into pop
+          (mapv (fn [_])
+                  ; TODO: Get parent pool, pick 2, breed
+                (range n-needed)))))
 
-(defn advance-population [pop mutate-chance perc-to-keep possible-gene-types])
+(defn advance-population [pop mutate-chance perc-to-keep possible-gene-types]
+  (let []))
 
 
 
