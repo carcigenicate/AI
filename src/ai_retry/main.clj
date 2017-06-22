@@ -10,14 +10,15 @@
             [ai-retry.perceptron.net :as n]
             [ai-retry.perceptron.test-net :as tn]
 
-            [helpers.general-helpers :as g])
-  (:gen-class))
+            [helpers.general-helpers :as g]
 
-(def error-learning-rate-multiple 5)
+            [clojure.pprint :refer [pprint]])
+  (:gen-class)
+  (:import (java.util Date)))
 
-(def learning-rate 0.005)
+(def error-learning-rate-multiple 0.00001)
 
-(def error-epsilon 1e-10)
+(def learning-rate 1)
 
 (defn average-abs-error [errors]
   (nh/average
@@ -29,11 +30,14 @@
     (> old-error new-error) (char 8659) ; Down arrow
     :else \=))
 
+(defn time-stamp []
+  (str (Date.)))
+
 (defn adjustment-loop [layers learning-set iterations]
   (let [sample-perc (ffirst layers)
         deriv (-> sample-perc :activation-pair :derivative)
         cycled-sets (cycle learning-set)
-        print-every (/ iterations 50.0)]
+        print-every (/ iterations 100.0)]
 
     (loop [i 0
            acc-layers layers
@@ -58,7 +62,7 @@
           (println i "E:" av-error "I/O:" input output "{" fired-acts
                    "}\n\tL:" l-rate "-" error-sym " " err-diff "\n")
 
-          (println i error-sym)
+          (println i error-sym "-" (time-stamp))
           (clojure.pprint/pprint last-errors)
           (println))
 
@@ -93,10 +97,10 @@
         b-net (eb/backprop-layers fired-net input errors 1)]
 
     (comment
-      (clojure.pprint/pprint fired-net)
+      (pprint fired-net)
       (println "Out Acts:" acts)
       (println "Errors:" errors)
-      (clojure.pprint/pprint b-net))))
+      (pprint b-net))))
 
 
 #_

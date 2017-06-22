@@ -8,7 +8,7 @@
   (count (second (first learning-set))))
 
 (defn scale-set [min-in max-in min-out max-out learning-set]
-  (let [f (fn [xs mi ma] (mapv #(g/map-range % mi ma 0 1) xs))]
+  (let [f (fn [xs mi ma] (mapv #(double (g/map-range % mi ma 0 1)) xs))]
     (into {}
       (for [[is os] learning-set]
         [(f is min-in max-in)
@@ -58,8 +58,7 @@
    [0.7 0.6 0.5] [0.7 0.6 0.5]
    [0.8 0.3 0.5] [0.8 0.3 0.5]})
 
-(def
-  parity-set
+(def parity-set
   "If the input is truthy, the first ouput will output 1, else the second output will output 1."
   {[0.2] [1 0]
    [0.3] [0 1]
@@ -67,3 +66,33 @@
    [0.6] [1 0]
    [0.8] [1 0]
    [0.7] [0 1]})
+
+; ----- Direction Set -----
+
+(def direction-inputs
+  {:left
+   [0 0 0
+    1 0 0
+    0 0 0]
+
+   :right
+   [0 0 0
+    0 0 1
+    0 0 0]
+
+   :up
+   [0 1 0
+    0 0 0
+    0 0 0]
+
+   :down
+   [0 0 0
+    0 0 0
+    0 1 0]})
+
+(def direction-set
+  (let [d direction-inputs]
+    {(d :left) [-1 0]
+     (d :right) [1 0]
+     (d :up) [0 -1]
+     (d :down) [0 1]}))
