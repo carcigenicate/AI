@@ -25,6 +25,8 @@
   (let [r (remove-from-vector v i)]
     [(v i) r]))
 
+; TODO: Change to shuffle + subvec the last n genes?
+
 (defn random-genes [pop n-to-pick rand-gen]
   "Randomly picks n-to-pick many genes from the population.
   Returns a pair of [picked-genes remaining-genes]"
@@ -35,6 +37,27 @@
         [picked rest-pop]
         (let [[p r] (remove-at-index rest-pop (r-elem rest-pop))]
           (recur r (conj picked p)))))))
+
+(defn mutate-population [pop mutate-chance possible-gene-types rand-gen]
+  (let [mut? #(g/random-perc mutate-chance rand-gen)]
+    (mapv #(let [swap-mut (if (mut?)
+                            (gs/swap-mutate % rand-gen)
+                            %)
+                 replace-mut (if (mut?)
+                               (gs/replacement-mutate swap-mut possible-gene-types rand-gen)
+                               swap-mut)]
+             replace-mut)
+          pop)))
+
+; TODO: Try to think of a better way. Shuffling isn't that efficient.
+(defn random-genes2
+  "Randomly picks n-to-pick many genes from the population.
+ Returns a pair of [picked-genes remaining-genes].
+ Note: remaining-genes will be shuffled."
+  [pop n-to-pick rand-gen]
+  (let [shuffled (g/shuffle pop rand-gen)
+        start-i (- (count pop) n-to-pick)]
+    [(subvec shuffled start-i) (subvec shuffled 0 start-i)]))
 
 (defn seperate-elite-genes
   "Expects the population is sorted already. The fittest gene should be first.
@@ -51,25 +74,18 @@
     (into elites
           (random-genes rest-genes rest-to-pick rand-gen))))
 
-(defn mutate-population [pop mutate-chance possible-gene-types rand-gen]
-  (let [mut? #(g/random-perc mutate-chance rand-gen)]
-    (mapv #(let [swap-mut (if (mut?)
-                            (gs/swap-mutate % rand-gen)
-                            %)
-                 replace-mut (if (mut?)
-                               (gs/replacement-mutate swap-mut possible-gene-types rand-gen)
-                               swap-mut)]
-                replace-mut)
-          pop)))
+(defn get-parents [sorted-pop elite-perc lesser-perc rand-gen]
+  (let [parents (get-potential-parents sorted-pop elite-perc lesser-perc rand-gen)]))
 
-(defn repopulate-population [pop expected-size rand-gen]
-  (let [n-needed (- expected-size (count pop))]
-    (into pop
+
+(defn repopulate-population [sorted-pop expected-size rand-gen]
+  (let [n-needed (- expected-size (count sorted-pop))]
+    (into sorted-pop
           (mapv (fn [_])
-                  ; TODO: Get parent pool, pick 2, breed
+                  ;TODO: Get parent pool, pick 2, breed
                 (range n-needed)))))
 
-(defn advance-population [pop mutate-chance perc-to-keep possible-gene-types]
+(defn advance-population [sorted-pop mutate-chance perc-to-keep possible-gene-types]
   (let []))
 
 
