@@ -1,10 +1,13 @@
 (ns ai-retry.genetic-algorithm.population
   (:require [ai-retry.genetic-algorithm.sequence :as gs]
-            [helpers.general-helpers :as g])
-
-  (:import [ai_retry.genetic_algorithm.settings Settings]))
+            [helpers.general-helpers :as g]))
 
 (def parent-one-breed-chance 0.5)
+
+(def genes-accessor first)
+(def fitness-accessor second)
+(def std-fitness-comparator #(> (fitness-accessor %) (fitness-accessor %2)))
+(def std-error-comparator #(< (fitness-accessor %) (fitness-accessor %2)))
 
 (def new-population
   [])
@@ -42,8 +45,8 @@
     [(subvec shuffled start-i) (subvec shuffled 0 start-i)]))
 
 (defn seperate-elite-genes
-  "Expects the population is sorted already. The fittest gene should be first.
-  Seperates the top elite-perc percentage, and returns a pair of [elite-genes other-genes]."
+  "Expects the population is sorted already. The fittest individual should be first.
+  Seperates the top elite-perc percentage, and returns a pair of [elite-individuals other-individuals]."
   [sorted-pop elite-perc]
   (let [n-to-keep (int (* (count sorted-pop) elite-perc))]
     [(subvec sorted-pop 0 n-to-keep) (subvec sorted-pop n-to-keep)]))
@@ -69,12 +72,49 @@
                     (gs/breed p1 p2 parent-one-breed-chance rand-gen)))
                 (range n-needed)))))
 
-(defn advance-population [sorted-pop ^Settings settings fitness-comparator rand-gen]
-  (let [{{ec :elite-chance lc :lesser-chance mc :mut-chance} :standard,
-         {pg :possible-gene-types} :problem} settings
-        sorted-pop (sort pop fitness-comparator)
+(defn get-children [sorted-pop expected-size elite-perc lesser-perc rand-gen]
+  (let [n-needed (- expected-size (count sorted-pop))
+        parents #(get-parents sorted-pop elite-perc lesser-perc rand-gen)]
+    (mapv (fn [_]
+            (let [[p1 p2] (parents)]
+              (gs/breed p1 p2 parent-one-breed-chance rand-gen)))
+          (range n-needed))))
 
-        mutated-pop (mutate-population sorted-pop mc pg rand-gen)]))
+(defn combine-populations [& pops]
+  (reduce into [] pops))
+
+(defn remove-scores [judged-pop]
+  ; TODO: Eager or lazy? Sorting *should* force everything anyways.
+  (mapv genes-accessor judged-pop))
+
+(defn judge-population
+  "Runs each individual through the fitness function to evaluate their fitness.
+  Returns a lazy list of pairs of [individual fitness-score]"
+  [pop fitness-f]
+  ; TODO: Memoize ff? Depends on how expensive it is, whether it's pure, chance of identical indivuals...
+  ;  Pass in flag?
+  (map #(vector [% (fitness-f %)])
+       pop))
+
+(defn judge-and-sort-population [pop fitness-f com]
+  (remove-scores
+    (sort com
+      (judge-population pop fitness-f))))
+
+(defn remove-weak-individuals [sorted-pop keep-perc]
+  (let [keep-n (int (* (count sorted-pop) keep-perc))]
+    (subvec sorted-pop keep-n)))
+
+(defn advance-population [pop settings fitness-comparator rand-gen]
+  (let [{{ec :elite-chance lc :lesser-chance mc :mut-chance ps :pop-size kp :keep-perc} :standard,
+         {pg :possible-gene-types ff :fitness-f} :problem} settings
+        sorted-pop (judge-and-sort-population pop ff fitness-comparator)
+        children (get-children sorted-pop ps ec lc rand-gen)
+
+        thinned-pop (remove-weak-individuals sorted-pop kp)
+        mutated-pop (mutate-population sorted-pop mc pg rand-gen)]
+
+    mutated-pop))
 
 
 ; TODO: DO SOME TESTING!!!!!!!!

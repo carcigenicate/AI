@@ -1,15 +1,16 @@
 (ns ai-retry.genetic-algorithm.settings)
 
-(defrecord Standard-Settings [elite-perc lesser-perc mut-chance pop-size])
+(defrecord Standard-Settings [elite-perc lesser-perc keep-perc mut-chance pop-size])
 
 (def default-standard-settings
   (->Standard-Settings
     0.4
     0.2
+    0.3
     0.01
     100))
 
-(defrecord Problem-Settings [possible-gene-types])
+(defrecord Problem-Settings [fitness-f possible-gene-types])
 
 (defrecord Settings [standard problem])
 
