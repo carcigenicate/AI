@@ -12,6 +12,8 @@
 
 (def gene-types (into #{} (range 12 1000)))
 
+(def fit-err-comp p/std-error-comparator)
+
 (defn factors-of [n]
   (let [factor-of? #(zero? (rem %2 %))
         sqrt #(Math/sqrt ^double %)]
@@ -32,7 +34,7 @@
 (def problem-settings
   (s/->Problem-Settings fitness-f
                         gene-types
-                        p/std-error-comparator))
+                        fit-err-comp))
 
 ; TODO: Fix magics
 (def standard-settings
@@ -40,7 +42,7 @@
     0.4 0.4 ; Elite-perc / lesser-perc
     0.5 ; Keep perc
     0.5 ; Mutation chance
-    500)) ; Pop size
+    10)) ; Pop size
 
 (def settings (s/->Settings standard-settings problem-settings))
 
@@ -50,5 +52,11 @@
                        (-> settings :standard :pop-size)
                        test-rand-gen))
 
+(def max-gens 1e6)
+
+(def display-f
+  (partial ga/standard-display-f
+           max-gens fitness-f fit-err-comp))
+
 (defn test-scenario [pop]
-  (ga/advance-generations pop settings 1e6 test-rand-gen))
+  (ga/advance-generations pop settings display-f max-gens test-rand-gen))
