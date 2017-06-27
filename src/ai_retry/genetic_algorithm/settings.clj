@@ -10,7 +10,7 @@
     0.01
     100))
 
-(defrecord Problem-Settings [fitness-f possible-gene-types])
+(defrecord Problem-Settings [fitness-f possible-gene-types fit-err-comp])
 
 (defrecord Settings [standard problem])
 

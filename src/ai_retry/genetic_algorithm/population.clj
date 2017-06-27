@@ -57,11 +57,12 @@
   (let [[elites rest-genes] (seperate-elite-genes sorted-pop elite-perc)
         rest-to-pick (* (count rest-genes) lesser-perc)]
     (into elites
-          (multiple-random-from-coll rest-genes rest-to-pick rand-gen))))
+          ; TODO: Waste throwing away second?
+          (first (multiple-random-from-coll rest-genes rest-to-pick rand-gen)))))
 
 (defn get-parents [sorted-pop elite-perc lesser-perc rand-gen]
   (let [parents (get-potential-parents sorted-pop elite-perc lesser-perc rand-gen)]
-    (multiple-random-from-coll parents 2 rand-gen)))
+    (first (multiple-random-from-coll parents 2 rand-gen))))
 
 (defn repopulate-population [sorted-pop expected-size elite-perc lesser-perc rand-gen]
   (let [n-needed (- expected-size (count sorted-pop))
@@ -72,13 +73,12 @@
                     (gs/breed p1 p2 parent-one-breed-chance rand-gen)))
                 (range n-needed)))))
 
-(defn get-children [sorted-pop expected-size elite-perc lesser-perc rand-gen]
-  (let [n-needed (- expected-size (count sorted-pop))
-        parents #(get-parents sorted-pop elite-perc lesser-perc rand-gen)]
+(defn get-children [sorted-pop n-children elite-perc lesser-perc rand-gen]
+  (let [parents #(get-parents sorted-pop elite-perc lesser-perc rand-gen)]
     (mapv (fn [_]
             (let [[p1 p2] (parents)]
               (gs/breed p1 p2 parent-one-breed-chance rand-gen)))
-          (range n-needed))))
+          (range n-children))))
 
 (defn combine-populations [& pops]
   (reduce into [] pops))
@@ -93,7 +93,7 @@
   [pop fitness-f]
   ; TODO: Memoize ff? Depends on how expensive it is, whether it's pure, chance of identical indivuals...
   ;  Pass in flag?
-  (map #(vector [% (fitness-f %)])
+  (map #(vector % (fitness-f %))
        pop))
 
 (defn judge-and-sort-population [pop fitness-f com]
@@ -103,18 +103,22 @@
 
 (defn remove-weak-individuals [sorted-pop keep-perc]
   (let [keep-n (int (* (count sorted-pop) keep-perc))]
-    (subvec sorted-pop keep-n)))
+    (subvec sorted-pop 0 keep-n)))
+
+(defn n-children-per-generation [pop-size keep-perc]
+  (- pop-size (* keep-perc pop-size)))
 
 (defn advance-population [pop settings fitness-comparator rand-gen]
-  (let [{{ec :elite-chance lc :lesser-chance mc :mut-chance ps :pop-size kp :keep-perc} :standard,
+  (let [{{ep :elite-perc lp :lesser-perc mc :mut-chance ps :pop-size kp :keep-perc} :standard,
          {pg :possible-gene-types ff :fitness-f} :problem} settings
         sorted-pop (judge-and-sort-population pop ff fitness-comparator)
-        children (get-children sorted-pop ps ec lc rand-gen)
+        n-children (n-children-per-generation ps kp)
+        children (get-children sorted-pop n-children ep lp rand-gen)
 
         thinned-pop (remove-weak-individuals sorted-pop kp)
-        mutated-pop (mutate-population sorted-pop mc pg rand-gen)]
+        mutated-children (mutate-population children mc pg rand-gen)]
 
-    mutated-pop))
+    (combine-populations thinned-pop mutated-children)))
 
 
 ; TODO: DO SOME TESTING!!!!!!!!

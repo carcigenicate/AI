@@ -46,10 +46,12 @@
 (defn breed [genes1 genes2 first-parent-chance rand-gen]
   (check-gene-compatibility genes1 genes2)
 
-  (reduce (fn [acc [g1 g2]]
-            (if (g/random-perc first-parent-chance rand-gen)
-              g1
-              g2))
-          []
-          (map vector genes1 genes2)))
+  (mapv (fn [g1 g2]
+          (if (g/random-perc first-parent-chance rand-gen)
+            g1
+            g2))
+        genes1 genes2))
+
+
+
 

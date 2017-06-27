@@ -1,4 +1,4 @@
-(defproject ai-retry "0.1.0-SNAPSHOT"
+(defproject ai-retry "1"
   :description "FIXME: write description"
 
   :dependencies [[org.clojure/clojure "1.8.0"]
