@@ -91,7 +91,6 @@
   "Runs each individual through the fitness function to evaluate their fitness.
   Returns a lazy list of pairs of [individual fitness-score]"
   [pop fitness-f]
-  ; TODO: Memoize ff? Depends on how expensive it is, whether it's pure, chance of identical indivuals...
   ;  Pass in flag?
   (map #(vector % (fitness-f %))
        pop))

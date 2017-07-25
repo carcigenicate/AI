@@ -16,9 +16,7 @@
   (:gen-class)
   (:import (java.util Date)))
 
-(def error-learning-rate-multiple 0.00001)
-
-(def learning-rate 1)
+(def error-learning-rate-multiple 0.0000001)
 
 (defn average-abs-error [errors]
   (nh/average
